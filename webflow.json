@@ -1,0 +1,16 @@
+{
+  "library": {
+    "name": "Pokemon Card Generator",
+    "components": [
+      "./components/**/*.webflow.@(js|jsx|mjs|ts|tsx)"
+    ],
+    "description": ""
+  },
+  "telemetry": {
+    "global": {
+      "allowTelemetry": true,
+      "lastPrompted": 1764629604857,
+      "version": "1.8.49"
+    }
+  }
+}

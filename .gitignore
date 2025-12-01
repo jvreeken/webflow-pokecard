@@ -1,0 +1,53 @@
+# Node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build output
+.next/
+out/
+dist/
+build/
+
+# Production files created by Webflow CLI (not needed for git)
+.webflow/
+webflow-*.zip
+
+# Local environment vars
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# Vercel
+.vercel/
+
+# IDE artifacts
+.vscode/
+.idea/
+
+# TypeScript build artifacts
+*.tsbuildinfo
+
+# macOS resource forks
+._*
+
+# Optional: pnpm / bun stores
+.pnpm-store/
+.bun/
+
+# Optional: lockfiles if you want to force one package manager
+# (Pick one—uncomment the ones you DON'T want committed)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
