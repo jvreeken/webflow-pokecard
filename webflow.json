@@ -4,7 +4,8 @@
     "components": [
       "./components/**/*.webflow.@(js|jsx|mjs|ts|tsx)"
     ],
-    "description": ""
+    "description": "",
+    "id": "pokemon-card-generator"
   },
   "telemetry": {
     "global": {

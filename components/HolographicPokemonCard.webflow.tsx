@@ -1,80 +1,120 @@
-// components/HolographicPokemonCard.webflow.tsx
 import { declareComponent } from "@webflow/react"
 import { props } from "@webflow/data-types"
-import { HolographicPokemonCard } from "./HolographicPokemonCard"
-import "../app/globals.css"
+import HolographicPokemonCard, {
+  type HolographicPokemonCardProps,
+} from "./HolographicPokemonCard"
 
-export default declareComponent(HolographicPokemonCard, {
+type WebflowProps = HolographicPokemonCardProps
+
+const HolographicPokemonCardWebflow = (p: WebflowProps) => {
+  return <HolographicPokemonCard {...p} />
+}
+
+export default declareComponent(HolographicPokemonCardWebflow, {
   name: "Holographic Pokémon Card",
-  description: "Holographic Pokémon-style card with motion, driven by Webflow props",
+  description: "Configurable holographic card with tilt, motion-based shimmer, and SVG lighting.",
   group: "Cards",
 
+  // Props that show up in Webflow Designer
   props: {
     name: props.Text({
       name: "Name",
       defaultValue: "Pikachu",
-      group: "Identity",
+      group: "Card",
     }),
+
     genus: props.Text({
       name: "Genus",
       defaultValue: "Mouse Pokémon",
-      group: "Identity",
+      group: "Card",
     }),
-    dexNumber: props.Number({
+
+    dexNumber: props.Text({
       name: "Dex Number",
-      defaultValue: 25,
-      decimals: 0,
-      min: 1,
-      group: "Identity",
+      defaultValue: "025",
+      group: "Card",
     }),
-    primaryType: props.Text({
+
+    primaryType: props.Variant({
       name: "Primary Type",
+      group: "Card",
+      options: [
+        "normal",
+        "fire",
+        "water",
+        "grass",
+        "electric",
+        "ice",
+        "fighting",
+        "poison",
+        "ground",
+        "flying",
+        "psychic",
+        "bug",
+        "rock",
+        "ghost",
+        "dragon",
+        "steel",
+        "dark",
+        "fairy",
+      ],
       defaultValue: "electric",
-      group: "Identity",
     }),
-    color: props.Variant({
+
+    colorTheme: props.Variant({
       name: "Color Theme",
-      options: ["yellow", "red", "blue", "green", "purple", "pink", "gray", "black", "brown", "white"],
+      group: "Styling",
+      options: ["red", "blue", "yellow", "green", "purple", "pink", "brown", "black", "gray", "white"],
       defaultValue: "yellow",
-      group: "Appearance",
     }),
+
     hp: props.Number({
       name: "HP",
+      group: "Stats",
       defaultValue: 60,
-      decimals: 0,
       min: 10,
       max: 300,
-      group: "Stats",
+      decimals: 0,
     }),
-    heightMeters: props.Number({
+
+    heightM: props.Number({
       name: "Height (m)",
+      group: "Stats",
       defaultValue: 0.4,
-      decimals: 2,
       min: 0,
-      group: "Info",
+      max: 20,
+      decimals: 2,
     }),
+
     weightKg: props.Number({
       name: "Weight (kg)",
-      defaultValue: 6,
-      decimals: 2,
+      group: "Stats",
+      defaultValue: 6.0,
       min: 0,
-      group: "Info",
+      max: 1000,
+      decimals: 2,
     }),
-    flavorText: props.Text({
+
+    flavorText: props.RichText({
       name: "Flavor Text",
+      group: "Card",
       defaultValue:
         "When several of these Pokémon gather, their electricity could build and cause lightning storms.",
-      group: "Content",
     }),
-    spriteUrl: props.Text({
-      name: "Sprite URL",
+
+    spriteUrl: props.Image({
+      name: "Sprite Image",
+      group: "Media",
       defaultValue:
         "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png",
-      group: "Content",
     }),
-  },
 
-  options: {
-    applyTagSelectors: true,
+    showMotionPrompt: props.Boolean({
+      name: "Show motion prompt on mobile",
+      group: "Behavior",
+      defaultValue: true,
+      trueLabel: "Show",
+      falseLabel: "Hide",
+    }),
   },
 })
