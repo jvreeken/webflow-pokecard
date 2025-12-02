@@ -24,6 +24,14 @@ import {
 } from "lucide-react"
 
 const STYLES = `
+@font-face {
+  font-family: "Pokemon Solid";
+  src: url("https://cdn.prod.website-files.com/692e1c94e92e40bdead6b1de/692f113ad85bac52852ece40_pokemon-20solid.woff2") format("woff2"), url("https://cdn.prod.website-files.com/692e1c94e92e40bdead6b1de/692f113afaa6c0e94e6c613e_pokemon-20solid.eot") format("embedded-opentype"), url("https://cdn.prod.website-files.com/692e1c94e92e40bdead6b1de/692f113a666a551cd07d7f34_pokemon-20solid.woff") format("woff"), url("https://cdn.prod.website-files.com/692e1c94e92e40bdead6b1de/692f113a5e32178c21563f12_pokemon-20solid.ttf") format("truetype"), url("https://cdn.prod.website-files.com/692e1c94e92e40bdead6b1de/692f113a84d4668f60a2eb34_pokemon-20solid.svg") format("svg");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 .pokemon-card-root {
   position: relative;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -77,7 +85,7 @@ const STYLES = `
 
 .card-header {
   position: relative;
-  z-index: 1;
+  z-index: 50;
   padding: 6px 10px;
   display: flex;
   justify-content: space-between;
@@ -167,23 +175,45 @@ const STYLES = `
 .card-bg {
   position: absolute;
   inset: 0;
-  opacity: 0.6;
-  mix-blend-mode: multiply;
+  overflow: hidden;
+  border-radius: 4px;
 }
 
-.card-bg-gradient {
+.card-bg-pattern {
   position: absolute;
-  inset: -50%;
-  width: 200%;
-  height: 200%;
-  background:
-    radial-gradient(circle at 0% 0%, rgba(255, 255, 255, 0.9), transparent 55%),
-    radial-gradient(circle at 100% 0%, rgba(255, 255, 255, 0.7), transparent 55%),
-    radial-gradient(circle at 0% 100%, rgba(255, 255, 255, 0.6), transparent 55%),
-    radial-gradient(circle at 100% 100%, rgba(255, 255, 255, 0.85), transparent 55%);
+  inset: 0;
+  opacity: 0.5;
+  mix-blend-mode: multiply;
+  transition: all 0.5s ease;
+}
+
+/* WATERMARK LAYER */
+
+.holo-images {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.mask-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
 }
 
 /* REFRACTION LAYERS */
+
+.watermark {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  mix-blend-mode: hard-light;
+  opacity: 0.5;
+}
 
 .refraction {
   position: absolute;
@@ -241,6 +271,7 @@ const STYLES = `
       transparent 60%
     );
   pointer-events: none;
+  z-index: 40;
 }
 
 /* ART IMAGE */
@@ -249,6 +280,7 @@ const STYLES = `
   position: absolute;
   inset: 0;
   pointer-events: none;
+  z-index: 30;
 }
 
 .art-img {
@@ -380,10 +412,14 @@ const STYLES = `
   text-decoration: underline;
 }
 
-/* SMALL UTILS */
+/* UTILITY */
 
-.hidden {
-  display: none;
+.sr-only-svg {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 `
 
@@ -410,36 +446,6 @@ type PokemonType =
 type ColorTheme = "red" | "blue" | "yellow" | "green" | "purple" | "pink" | "brown" | "black" | "gray" | "white"
 
 type SpriteInput = unknown
-
-function resolveSpriteUrl(sprite: SpriteInput): string {
-  if (!sprite) return ""
-
-  // Direct string URL
-  if (typeof sprite === "string") return sprite
-
-  if (typeof sprite === "object") {
-    const anySprite = sprite as any
-
-    // Common fields
-    if (typeof anySprite.url === "string") return anySprite.url
-    if (typeof anySprite.src === "string") return anySprite.src
-    if (typeof anySprite.href === "string") return anySprite.href
-
-    // Nested shapes like { file: { url } }
-    if (anySprite.file && typeof anySprite.file.url === "string") {
-      return anySprite.file.url
-    }
-
-    // { value: string | { url } }
-    if (anySprite.value) {
-      if (typeof anySprite.value === "string") return anySprite.value
-      if (typeof anySprite.value.url === "string") return anySprite.value.url
-      if (typeof anySprite.value.src === "string") return anySprite.value.src
-    }
-  }
-
-  return ""
-}
 
 export interface HolographicPokemonCardProps {
   name: string
@@ -501,28 +507,147 @@ const TypeIcon = ({ type }: { type: PokemonType }) => {
 function getThemeColors(theme: ColorTheme) {
   switch (theme) {
     case "red":
-      return { cardBg: "#fecaca", typeBg: "#ef4444" }
+      return { cardBg: "#fca5a5", typeBg: "#ef4444" }
     case "blue":
-      return { cardBg: "#bfdbfe", typeBg: "#3b82f6" }
+      return { cardBg: "#93c5fd", typeBg: "#3b82f6" }
     case "yellow":
-      return { cardBg: "#fef08a", typeBg: "#facc15" }
+      return { cardBg: "#fde047", typeBg: "#facc15" }
     case "green":
-      return { cardBg: "#bbf7d0", typeBg: "#22c55e" }
+      return { cardBg: "#86efac", typeBg: "#22c55e" }
     case "purple":
       return { cardBg: "#e9d5ff", typeBg: "#a855f7" }
     case "pink":
-      return { cardBg: "#fbcfe8", typeBg: "#ec4899" }
+      return { cardBg: "#f9a8d4", typeBg: "#ec4899" }
     case "brown":
       return { cardBg: "#fed7aa", typeBg: "#b45309" }
     case "black":
-      return { cardBg: "#71717a", typeBg: "#020617" }
+      return { cardBg: "#52525b", typeBg: "#020617" }
     case "gray":
-      return { cardBg: "#cbd5f5", typeBg: "#6b7280" }
+      return { cardBg: "#94a3b8", typeBg: "#6b7280" }
     case "white":
       return { cardBg: "#e2e8f0", typeBg: "#94a3b8" }
     default:
       return { cardBg: "#e2e8f0", typeBg: "#64748b" }
   }
+}
+
+function generateColorShades(theme: ColorTheme): string[] {
+  const map: Record<ColorTheme, string[]> = {
+    red: ["#ffffff", "#fafafa", "#f8fafc", "#fff1f2", "#ffe4e6"],
+    blue: ["#ffffff", "#fafafa", "#f8fafc", "#eff6ff", "#dbeafe"],
+    yellow: ["#ffffff", "#fafafa", "#f8fafc", "#fefce8", "#fef9c3"],
+    green: ["#ffffff", "#fafafa", "#f8fafc", "#f0fdf4", "#dcfce7"],
+    black: ["#ffffff", "#fafafa", "#f8fafc", "#f4f4f5", "#e4e4e7"],
+    brown: ["#ffffff", "#fafafa", "#f8fafc", "#fff7ed", "#ffedd5"],
+    purple: ["#ffffff", "#fafafa", "#f8fafc", "#faf5ff", "#f3e8ff"],
+    gray: ["#ffffff", "#fafafa", "#f8fafc", "#f8fafc", "#f1f5f9"],
+    white: ["#ffffff", "#fafafa", "#f8fafc", "#f1f5f9", "#e2e8f0"],
+    pink: ["#ffffff", "#fafafa", "#fff1f2", "#fdf2f8", "#fce7f3"],
+  }
+
+  return map[theme] || map.gray
+}
+
+function getRefractionGradient(theme: ColorTheme, index: number) {
+  const gradients: Record<ColorTheme, string[]> = {
+    red: [
+      "linear-gradient(105deg, transparent 20%, rgba(255, 50, 50, 0.5) 40%, rgba(255, 255, 100, 0.6) 45%, rgba(255, 0, 255, 0.5) 50%, transparent 70%)",
+      "linear-gradient(125deg, transparent 30%, rgba(255, 100, 100, 0.4) 45%, rgba(50, 255, 255, 0.4) 50%, rgba(200, 100, 255, 0.4) 55%, transparent 70%)",
+    ],
+    blue: [
+      "linear-gradient(105deg, transparent 20%, rgba(50, 150, 255, 0.5) 40%, rgba(100, 255, 255, 0.6) 45%, rgba(150, 50, 255, 0.5) 50%, transparent 70%)",
+      "linear-gradient(125deg, transparent 30%, rgba(0, 100, 255, 0.4) 45%, rgba(50, 255, 255, 0.4) 50%, rgba(200, 100, 255, 0.4) 55%, transparent 70%)",
+    ],
+    green: [
+      "linear-gradient(105deg, transparent 20%, rgba(50, 255, 100, 0.5) 40%, rgba(200, 255, 100, 0.6) 45%, rgba(0, 200, 200, 0.5) 50%, transparent 70%)",
+      "linear-gradient(125deg, transparent 30%, rgba(100, 255, 50, 0.4) 45%, rgba(255, 255, 100, 0.4) 50%, rgba(0, 255, 150, 0.4) 55%, transparent 70%)",
+    ],
+    yellow: [
+      "linear-gradient(105deg, transparent 20%, rgba(255, 200, 0, 0.5) 40%, rgba(255, 255, 100, 0.6) 45%, rgba(255, 100, 50, 0.5) 50%, transparent 70%)",
+      "linear-gradient(125deg, transparent 30%, rgba(255, 255, 0, 0.4) 45%, rgba(200, 255, 50, 0.4) 50%, rgba(255, 150, 0, 0.4) 55%, transparent 70%)",
+    ],
+    purple: [
+      "linear-gradient(105deg, transparent 20%, rgba(180, 50, 255, 0.5) 40%, rgba(255, 100, 255, 0.6) 45%, rgba(100, 50, 255, 0.5) 50%, transparent 70%)",
+      "linear-gradient(125deg, transparent 30%, rgba(200, 0, 255, 0.4) 45%, rgba(255, 50, 255, 0.4) 50%, rgba(150, 0, 255, 0.4) 55%, transparent 70%)",
+    ],
+    pink: [
+      "linear-gradient(105deg, transparent 20%, rgba(255, 100, 200, 0.5) 40%, rgba(255, 200, 250, 0.6) 45%, rgba(255, 50, 150, 0.5) 50%, transparent 70%)",
+      "linear-gradient(125deg, transparent 30%, rgba(255, 50, 200, 0.4) 45%, rgba(255, 150, 250, 0.4) 50%, rgba(255, 0, 150, 0.4) 55%, transparent 70%)",
+    ],
+    brown: [
+      "linear-gradient(105deg, transparent 20%, rgba(210, 105, 30, 0.5) 40%, rgba(255, 200, 100, 0.6) 45%, rgba(160, 82, 45, 0.5) 50%, transparent 70%)",
+      "linear-gradient(125deg, transparent 30%, rgba(184, 134, 11, 0.4) 45%, rgba(255, 215, 0, 0.4) 50%, rgba(139, 69, 19, 0.4) 55%, transparent 70%)",
+    ],
+    black: [
+      "linear-gradient(105deg, transparent 20%, rgba(100, 100, 100, 0.5) 40%, rgba(200, 200, 200, 0.6) 45%, rgba(50, 50, 80, 0.5) 50%, transparent 70%)",
+      "linear-gradient(125deg, transparent 30%, rgba(80, 80, 80, 0.4) 45%, rgba(150, 150, 150, 0.4) 50%, rgba(50, 50, 150, 0.4) 55%, transparent 70%)",
+    ],
+    gray: [
+      "linear-gradient(105deg, transparent 20%, rgba(150, 150, 150, 0.5) 40%, rgba(220, 220, 220, 0.6) 45%, rgba(100, 100, 120, 0.5) 50%, transparent 70%)",
+      "linear-gradient(125deg, transparent 30%, rgba(120, 120, 120, 0.4) 45%, rgba(200, 200, 200, 0.4) 50%, rgba(100, 100, 150, 0.4) 55%, transparent 70%)",
+    ],
+    white: [
+      "linear-gradient(105deg, transparent 20%, rgba(200, 200, 255, 0.5) 40%, rgba(255, 255, 255, 0.5) 45%, rgba(200, 255, 255, 0.5) 50%, transparent 70%)",
+      "linear-gradient(125deg, transparent 30%, rgba(180, 180, 220, 0.4) 45%, rgba(240, 240, 255, 0.4) 50%, rgba(180, 220, 220, 0.4) 55%, transparent 70%)",
+    ],
+  }
+
+  const fallback = [
+    "linear-gradient(105deg, transparent 20%, rgba(255, 200, 200, 0.5) 40%, rgba(255, 255, 255, 0.5) 45%, rgba(255, 200, 200, 0.5) 50%, transparent 70%)",
+    "linear-gradient(125deg, transparent 30%, rgba(255, 100, 100, 0.4) 45%, rgba(100, 255, 100, 0.4) 50%, rgba(100, 100, 255, 0.4) 55%, transparent 70%)",
+  ]
+
+  return (gradients[theme] || fallback)[index]
+}
+
+function getWatermarkGridData(name: string) {
+  const charWidth = 14
+  const wordWidth = name.length * charWidth
+  const gapX = 40
+  const stepX = wordWidth + gapX
+  const stepY = 40
+
+  const numCols = Math.ceil(800 / stepX) + 2
+  const numRows = Math.ceil(800 / stepY) + 2
+
+  const items: { x: number; y: number; text: string }[] = []
+
+  for (let row = 0; row < numRows; row++) {
+    const xOffset = (row % 2) * (stepX / 2)
+    for (let col = -1; col < numCols; col++) {
+      const x = col * stepX + xOffset - 200
+      const y = row * stepY - 200
+      items.push({ x, y, text: name })
+    }
+  }
+  return items
+}
+
+function renderWatermarkText(name: string) {
+  const items = getWatermarkGridData(name.toUpperCase())
+  return items.map((item, i) => (
+    <text
+      key={i}
+      x={item.x}
+      y={item.y}
+      fontFamily="Pokemon Solid"
+      fontSize="24"
+      fill="white"
+      style={{ letterSpacing: "2px" }}
+    >
+      {item.text}
+    </text>
+  ))
+}
+
+function resolveSpriteUrl(sprite: SpriteInput): string {
+  if (!sprite) return ""
+  if (typeof sprite === "string") return sprite
+
+  const anySprite = sprite as any
+  if (typeof anySprite.src === "string") return anySprite.src
+
+  return ""
 }
 
 export default function HolographicPokemonCard(props: HolographicPokemonCardProps) {
@@ -540,9 +665,6 @@ export default function HolographicPokemonCard(props: HolographicPokemonCardProp
     showMotionPrompt = true,
   } = props
 
-  // Debug to see what Webflow passes, check this in the browser console
-  console.log("spriteUrl prop from Webflow:", spriteUrl)
-
   const resolvedSpriteUrl = resolveSpriteUrl(spriteUrl)
 
   const cardRef = useRef<HTMLDivElement | null>(null)
@@ -550,6 +672,10 @@ export default function HolographicPokemonCard(props: HolographicPokemonCardProp
 
   const [showPermissionOverlay, setShowPermissionOverlay] = useState(false)
   const [permissionGranted, setPermissionGranted] = useState(false)
+
+  // PNG mask fallback for iOS Safari
+  const [isMobileSafari, setIsMobileSafari] = useState(false)
+  const [maskImage, setMaskImage] = useState<string>("")
 
   const orientationState = useRef({
     baselineBeta: 45,
@@ -563,6 +689,69 @@ export default function HolographicPokemonCard(props: HolographicPokemonCardProp
     lastMoveTime: 0,
   })
 
+  // Detect iOS Safari
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const ua = window.navigator.userAgent
+    const isIOS =
+      (/iPad|iPhone|iPod/.test(ua) ||
+        (navigator.platform === "MacIntel" && (navigator as any).maxTouchPoints > 1)) &&
+      !(window as any).MSStream
+
+    setIsMobileSafari(isIOS)
+  }, [])
+
+  // Generate PNG fallback mask for iOS, using Pokemon Solid
+  useEffect(() => {
+    if (!isMobileSafari) return
+    if (!name) return
+
+    const generateWatermark = async () => {
+      const canvas = document.createElement("canvas")
+      const ctx = canvas.getContext("2d")
+      if (!ctx) return
+
+      canvas.width = 800
+      canvas.height = 800
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+      // Try to ensure the font is loaded before drawing
+      try {
+        // @ts-ignore
+        if (document.fonts && document.fonts.load) {
+          await (document as any).fonts.load('24px "Pokemon Solid"')
+        }
+      } catch (e) {
+        console.warn("Font load failed or unsupported, using fallback", e)
+      }
+
+      ctx.font = '24px "Pokemon Solid", system-ui'
+      ctx.fillStyle = "white"
+
+      const scale = canvas.width / 340
+      ctx.scale(scale, scale)
+
+      ctx.save()
+      ctx.translate(170, 238)
+      ctx.rotate((-45 * Math.PI) / 180)
+      ctx.translate(-170, -238)
+
+      const items = getWatermarkGridData(name.toUpperCase())
+      items.forEach((item) => {
+        ctx.fillText(item.text, item.x, item.y)
+      })
+
+      ctx.restore()
+
+      const url = canvas.toDataURL("image/png")
+      setMaskImage(`url(${url})`)
+    }
+
+    generateWatermark()
+  }, [isMobileSafari, name])
+
+  // Device orientation handler
   const handleOrientation = (event: DeviceOrientationEvent) => {
     if (event.gamma == null || event.beta == null) return
 
@@ -599,6 +788,7 @@ export default function HolographicPokemonCard(props: HolographicPokemonCardProp
     }
   }
 
+  // Animation loop that updates CSS variables and light position
   useEffect(() => {
     let animationFrameId: number
 
@@ -652,6 +842,7 @@ export default function HolographicPokemonCard(props: HolographicPokemonCardProp
     }
   }, [permissionGranted])
 
+  // Pointer move for desktop
   function updatePointerWithin(bounds: DOMRect, clientX: number, clientY: number) {
     const posX = clientX - bounds.left
     const posY = clientY - bounds.top
@@ -687,6 +878,7 @@ export default function HolographicPokemonCard(props: HolographicPokemonCardProp
     card.addEventListener("pointermove", handlePointerMove)
     card.addEventListener("pointerleave", handlePointerLeave)
 
+    // initial position, bottom center
     const bounds = card.getBoundingClientRect()
     updatePointerWithin(bounds, bounds.left + bounds.width / 2, bounds.top + bounds.height)
 
@@ -696,10 +888,12 @@ export default function HolographicPokemonCard(props: HolographicPokemonCardProp
     }
   }, [permissionGranted])
 
+  // Show overlay on mobile if desired
   useEffect(() => {
     if (!showMotionPrompt) return
+    if (typeof window === "undefined") return
 
-    const ua = typeof window !== "undefined" ? window.navigator.userAgent : ""
+    const ua = window.navigator.userAgent
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)
 
     if (isMobile) {
@@ -712,6 +906,16 @@ export default function HolographicPokemonCard(props: HolographicPokemonCardProp
   }, [showMotionPrompt])
 
   const theme = getThemeColors(colorTheme)
+  const shades = generateColorShades(colorTheme)
+
+  const maskKey =
+    dexNumber && dexNumber.trim().length > 0
+      ? dexNumber.replace(/[^a-zA-Z0-9_-]/g, "")
+      : name.toLowerCase().replace(/[^a-z0-9_-]/g, "-")
+  const patternId = `text-pattern-mask-${maskKey}`
+  const maskId = `text-mask-${maskKey}`
+
+  const effectiveMaskImage = isMobileSafari && maskImage ? maskImage : `url(#${maskId})`
 
   return (
     <div className="pokemon-card-root">
@@ -759,6 +963,7 @@ export default function HolographicPokemonCard(props: HolographicPokemonCardProp
         <article ref={cardRef} className="card" data-active="true">
           <div className="card-frame">
             <div className="card-inner" style={{ backgroundColor: theme.cardBg }}>
+              {/* Header */}
               <header className="card-header">
                 <div className="card-header-left">
                   <span className="card-genus">{genus}</span>
@@ -772,22 +977,101 @@ export default function HolographicPokemonCard(props: HolographicPokemonCardProp
                 </div>
               </header>
 
+              {/* Art + holo */}
               <div className="art-wrapper holo-card">
                 <div className="card__content">
                   <div className="card-bg">
-                    <div className="card-bg-gradient" />
-                    <div className="refraction" />
-                    <div className="refraction" />
+                    <div
+                      className="card-bg-pattern"
+                      style={{
+                        // @ts-ignore custom CSS vars
+                        "--u": "0.25vmin",
+                        // @ts-ignore
+                        "--c1": shades[0],
+                        // @ts-ignore
+                        "--c2": shades[1],
+                        // @ts-ignore
+                        "--c3": shades[2],
+                        // @ts-ignore
+                        "--c4": shades[3],
+                        // @ts-ignore
+                        "--c5": shades[4],
+                        // @ts-ignore
+                        "--gp": "50%/calc(var(--u) * 10) calc(var(--u) * 17.67)",
+                        background: `
+                          conic-gradient(from 90deg at 99% 67%, var(--c5) 0 90deg, #fff0 0 360deg) var(--gp),
+                          conic-gradient(from 180deg at 1% 67%, var(--c5) 0 90deg, #fff0 0 360deg) var(--gp),
+                          conic-gradient(from 0deg at 99% 33%, var(--c5) 0 90deg, #fff0 0 360deg) var(--gp),
+                          conic-gradient(from -90deg at 1% 33%, var(--c5) 0 90deg, #fff0 0 360deg) var(--gp),
+                          conic-gradient(from -60deg at 50% 15.5%, var(--c3) 0 120deg, #fff0 0 360deg) var(--gp),
+                          conic-gradient(from -60deg at 50% 16.75%, var(--c5) 0 120deg, #fff0 0 360deg) var(--gp),
+                          conic-gradient(from 120deg at 50% 83.25%, var(--c5) 0 120deg, #fff0 0 360deg) var(--gp),
+                          linear-gradient(32deg, #fff0 0 49.5%, var(--c5) 0 50.5%, #fff0 0 100%) var(--gp),
+                          linear-gradient(-32deg, #fff0 0 49.5%, var(--c5) 0 50.5%, #fff0 0 100%) var(--gp),
+                          linear-gradient(-90deg, #fff0 0 49%, var(--c5) 0 51%, #fff0 0 100%) var(--gp),
+                          linear-gradient(60.5deg, #fff0 0 49.5%, var(--c5) 0 50.5%, #fff0 0 100%) var(--gp),
+                          linear-gradient(-60.5deg, #fff0 0 49.5%, var(--c5) 0 50.5%, #fff0 0 100%) var(--gp),
+                          conic-gradient(from -90deg at 50% 50%, var(--c5) 0 32deg, var(--c3) 0 60.5deg, var(--c4) 0 90deg, var(--c5) 0 119.5deg, var(--c1) 0 148deg, var(--c5) 0 180deg, #fff0 0 360deg) var(--gp),
+                          conic-gradient(from 90deg at 50% 50%, var(--c2) 0 32deg, var(--c4) 0 60.5deg, var(--c3) 0 90deg, var(--c1) 0 119.5deg, var(--c5) 0 148deg, var(--c2) 0 180deg, #fff0 0 360deg) var(--gp)
+                        `,
+                        backgroundColor: shades[4],
+                      }}
+                    />
+
+                    {/* Watermark mask + refraction */}
+                    <div className="holo-images">
+                      <svg className="mask-svg">
+                        <defs>
+                          <pattern
+                            id={patternId}
+                            x="0"
+                            y="0"
+                            width="100%"
+                            height="100%"
+                            patternUnits="userSpaceOnUse"
+                          >
+                            <g transform="rotate(-45, 170, 238)">{renderWatermarkText(name)}</g>
+                          </pattern>
+                          <mask id={maskId}>
+                            <rect width="100%" height="100%" fill="black" />
+                            <rect width="100%" height="100%" fill={`url(#${patternId})`} />
+                          </mask>
+                        </defs>
+                      </svg>
+
+                      <div
+                        className="watermark"
+                        style={{
+                          maskImage: effectiveMaskImage,
+                          WebkitMaskImage: effectiveMaskImage,
+                          maskType: "luminance",
+                          WebkitMaskType: "luminance",
+                          maskRepeat: "no-repeat",
+                          WebkitMaskRepeat: "no-repeat",
+                          maskPosition: "center",
+                          WebkitMaskPosition: "center",
+                          maskSize: "cover",
+                          WebkitMaskSize: "cover",
+                        }}
+                      >
+                        <div
+                          className="refraction"
+                          style={{ background: getRefractionGradient(colorTheme, 0) }}
+                        />
+                        <div
+                          className="refraction"
+                          style={{ background: getRefractionGradient(colorTheme, 1) }}
+                        />
+                      </div>
+                    </div>
                   </div>
 
+                  {/* Spotlight */}
                   <div className="spotlight" />
 
+                  {/* Foreground art */}
                   <div className="art-foreground">
-                    <img
-                      src={resolvedSpriteUrl}
-                      alt={name}
-                      className="art-img"
-                    />
+                    <img src={resolvedSpriteUrl} alt={name} className="art-img" />
                     <img
                       src={resolvedSpriteUrl}
                       alt=""
@@ -801,6 +1085,7 @@ export default function HolographicPokemonCard(props: HolographicPokemonCardProp
                 </div>
               </div>
 
+              {/* Meta strip + flavor */}
               <div className="card-meta">
                 <span>NO. {dexNumber}</span>
                 <span>HT: {heightM.toFixed(1)}m</span>
@@ -816,7 +1101,8 @@ export default function HolographicPokemonCard(props: HolographicPokemonCardProp
         </article>
       </div>
 
-      <svg className="hidden" aria-hidden="true">
+      {/* SVG filter */}
+      <svg className="sr-only-svg" aria-hidden="true">
         <defs>
           <filter id="puffy" colorInterpolationFilters="sRGB" primitiveUnits="userSpaceOnUse">
             <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur1" />
