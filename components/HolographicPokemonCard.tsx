@@ -39,14 +39,12 @@ const STYLES = `
 }
 
 .pokemon-card-wrapper {
-  background: #020617;
   padding: 16px;
   border-radius: 16px;
   display: inline-flex;
   flex-direction: column;
   align-items: center;
   gap: 16px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
 }
 
 /* CARD CORE */
@@ -110,6 +108,7 @@ const STYLES = `
   text-transform: capitalize;
   line-height: 1.1;
   color: #000000;
+  margin:0;
 }
 
 .card-header-right {
@@ -152,10 +151,7 @@ const STYLES = `
   border-radius: 4px;
   border: 4px solid #fbbf24;
   background: #ffffff;
-  box-shadow:
-    inset 0 0 0 1px rgba(0, 0, 0, 0.08),
-    0 6px 14px rgba(0, 0, 0, 0.4);
-  aspect-ratio: 4 / 3;
+  flex:1;
 }
 
 .holo-card {
@@ -229,16 +225,16 @@ const STYLES = `
     transparent 70%
   );
   mix-blend-mode: color-dodge;
-  opacity: 0;
+  opacity: 0.75;
   transform:
     translateX(calc(var(--pointer-x, 0) * -25%))
     translateY(calc(var(--pointer-y, 0) * -25%));
-  transition: opacity 0.3s;
+  transition: opacity 0.15s;
   pointer-events: none;
 }
 
 .card:hover .refraction {
-  opacity: 0.75;
+  opacity: 1;
 }
 
 .refraction:nth-child(2) {
@@ -290,7 +286,7 @@ const STYLES = `
   height: 100%;
   object-fit: contain;
   padding: 12px;
-  transform: scale(var(--poke-scale, 1.25));
+  transform:scale(1);
   transition: transform 80ms ease-out;
 }
 
@@ -323,6 +319,10 @@ const STYLES = `
   font-size: 12px;
   font-style: italic;
   text-align: center;
+}
+
+.card-flavor p {
+    margin-bottom:0;
 }
 
 /* GRAIN OVERLAY */
@@ -423,7 +423,9 @@ const STYLES = `
 }
 `
 
-type PokemonType =
+const MOTION_CONSENT_KEY = "holo-card-motion-consent"
+
+export type PokemonType =
   | "normal"
   | "fire"
   | "water"
@@ -443,7 +445,17 @@ type PokemonType =
   | "dark"
   | "fairy"
 
-type ColorTheme = "red" | "blue" | "yellow" | "green" | "purple" | "pink" | "brown" | "black" | "gray" | "white"
+export type ColorTheme =
+  | "red"
+  | "blue"
+  | "yellow"
+  | "green"
+  | "purple"
+  | "pink"
+  | "brown"
+  | "black"
+  | "gray"
+  | "white"
 
 type SpriteInput = unknown
 
@@ -456,7 +468,8 @@ export interface HolographicPokemonCardProps {
   hp: number
   heightM: number
   weightKg: number
-  flavorText: string
+  flavorText: React.ReactNode
+  /** Image URL or Webflow Image prop */
   spriteUrl: SpriteInput
   /** If true, shows the gyroscope permission overlay on mobile devices */
   showMotionPrompt?: boolean
@@ -672,9 +685,10 @@ export default function HolographicPokemonCard(props: HolographicPokemonCardProp
 
   const [showPermissionOverlay, setShowPermissionOverlay] = useState(false)
   const [permissionGranted, setPermissionGranted] = useState(false)
+  const [hasStoredConsent, setHasStoredConsent] = useState(false)
+  const [isMobileSafari, setIsMobileSafari] = useState(false)
 
   // PNG mask fallback for iOS Safari
-  const [isMobileSafari, setIsMobileSafari] = useState(false)
   const [maskImage, setMaskImage] = useState<string>("")
 
   const orientationState = useRef({
@@ -693,12 +707,13 @@ export default function HolographicPokemonCard(props: HolographicPokemonCardProp
   useEffect(() => {
     if (typeof window === "undefined") return
     const ua = window.navigator.userAgent
-    const isIOS =
+
+    const isIOSLike =
       (/iPad|iPhone|iPod/.test(ua) ||
         (navigator.platform === "MacIntel" && (navigator as any).maxTouchPoints > 1)) &&
       !(window as any).MSStream
 
-    setIsMobileSafari(isIOS)
+    setIsMobileSafari(isIOSLike)
   }, [])
 
   // Generate PNG fallback mask for iOS, using Pokemon Solid
@@ -716,14 +731,13 @@ export default function HolographicPokemonCard(props: HolographicPokemonCardProp
 
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-      // Try to ensure the font is loaded before drawing
       try {
         // @ts-ignore
         if (document.fonts && document.fonts.load) {
           await (document as any).fonts.load('24px "Pokemon Solid"')
         }
-      } catch (e) {
-        console.warn("Font load failed or unsupported, using fallback", e)
+      } catch {
+        // ignore font loading failure
       }
 
       ctx.font = '24px "Pokemon Solid", system-ui'
@@ -776,17 +790,73 @@ export default function HolographicPokemonCard(props: HolographicPokemonCardProp
         if (permissionState === "granted") {
           setPermissionGranted(true)
           setShowPermissionOverlay(false)
+          setHasStoredConsent(true)
+          try {
+            window.localStorage.setItem(MOTION_CONSENT_KEY, "granted")
+          } catch {
+            // ignore storage issues
+          }
           window.addEventListener("deviceorientation", handleOrientation)
         }
       } else {
         setPermissionGranted(true)
         setShowPermissionOverlay(false)
+        setHasStoredConsent(true)
+        try {
+          window.localStorage.setItem(MOTION_CONSENT_KEY, "granted")
+        } catch {
+          // ignore
+        }
         window.addEventListener("deviceorientation", handleOrientation)
       }
     } catch (error) {
       console.error("Motion permission request failed", error)
     }
   }
+
+  // If the user has already granted motion once, skip the popup.
+  // On iOS we still need a user gesture to re-request permission.
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const ua = window.navigator.userAgent
+    const isIOSLike =
+      (/iPad|iPhone|iPod/.test(ua) ||
+        (navigator.platform === "MacIntel" && (navigator as any).maxTouchPoints > 1)) &&
+      !(window as any).MSStream
+
+    try {
+      const stored = window.localStorage.getItem(MOTION_CONSENT_KEY)
+      if (stored === "granted") {
+        setHasStoredConsent(true)
+
+        if (!isIOSLike) {
+          setPermissionGranted(true)
+          window.addEventListener("deviceorientation", handleOrientation)
+        } else {
+          const onFirstInteraction = () => {
+            requestOrientationPermission()
+          }
+
+          window.addEventListener("click", onFirstInteraction, { once: true })
+          window.addEventListener("touchstart", onFirstInteraction, { once: true })
+
+          return () => {
+            window.removeEventListener("click", onFirstInteraction)
+            window.removeEventListener("touchstart", onFirstInteraction)
+            window.removeEventListener("deviceorientation", handleOrientation)
+          }
+        }
+      }
+    } catch {
+      // ignore storage issues
+    }
+
+    return () => {
+      window.removeEventListener("deviceorientation", handleOrientation)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Animation loop that updates CSS variables and light position
   useEffect(() => {
@@ -818,10 +888,6 @@ export default function HolographicPokemonCard(props: HolographicPokemonCardProp
       if (card) {
         card.style.setProperty("--pointer-x", state.currentRx.toFixed(3))
         card.style.setProperty("--pointer-y", state.currentRy.toFixed(3))
-
-        const tiltUp = Math.max(0, -state.currentRy)
-        const dynamicScale = 1.25 + tiltUp * 0.4
-        card.style.setProperty("--poke-scale", dynamicScale.toFixed(3))
 
         if (lightRef.current) {
           const bounds = card.getBoundingClientRect()
@@ -878,7 +944,6 @@ export default function HolographicPokemonCard(props: HolographicPokemonCardProp
     card.addEventListener("pointermove", handlePointerMove)
     card.addEventListener("pointerleave", handlePointerLeave)
 
-    // initial position, bottom center
     const bounds = card.getBoundingClientRect()
     updatePointerWithin(bounds, bounds.left + bounds.width / 2, bounds.top + bounds.height)
 
@@ -896,14 +961,14 @@ export default function HolographicPokemonCard(props: HolographicPokemonCardProp
     const ua = window.navigator.userAgent
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)
 
-    if (isMobile) {
+    if (isMobile && !permissionGranted && !hasStoredConsent) {
       setShowPermissionOverlay(true)
     }
 
     return () => {
       window.removeEventListener("deviceorientation", handleOrientation)
     }
-  }, [showMotionPrompt])
+  }, [showMotionPrompt, permissionGranted, hasStoredConsent])
 
   const theme = getThemeColors(colorTheme)
   const shades = generateColorShades(colorTheme)
